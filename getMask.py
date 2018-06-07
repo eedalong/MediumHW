@@ -114,14 +114,45 @@ def BeautifyLips(MouthImage,Choice):
 
     #cv2.imwrite('/home/yuanxl/after_beautify.jpg',255*hsv_image[:,:,::-1])
     return np.array(Mouth * 255,dtype = np.uint8);
-def AddGuassian(MaskImage,shape):
-    '''
-    rect = GetRect(shape);
-    Guass_map = GetGaussMap(rect);
-    '''
-    pass
+def GetRect(shape):
+    global points_lists;
+    x1 = y1 = 100000;
+    x2 = y2 = 0;
+    for points_list in points_lists:
+        for point in points_list:
+            if shape.part(point).x < x1:
+                x1 = shape.part(point).x;
+            if shape.part(point).x > x2:
+                x2 = shape.part(point).x;
+            if shape.part(point).y < y1:
+                y1 = shape.part(point).y;
+            if shape.part(point).y > y2:
+                y2 = shape.part(point).y;
 
-def BeautifyLips2(MouthImage,Choice):
+    return [x1,y1,x2,y2];
+def GetGaussMap(rect):
+    sigma = 5;
+    gauss_map = np.zeros((rect[3] - rect[1],rect[2] - rect[0]));
+    center_x = (rect[0] + rect[2] )/ 2;
+    center_y = (rect[1] + rect[3]) / 2;
+    for i in range(rect[3] -rect[1]):
+        for j in range(rect[2] - rect[0]):
+            dist = np.sqrt((i -center_y)**2 + (j  - center_x)**2);
+            gauss_map[i][j] = np.exp(-0.5 * dist / sigma);
+    return gauss_map;
+
+def AddGaussian(MaskImage,shape):
+
+    rect = GetRect(shape);
+    Gauss_map = GetGaussMap(rect);
+    Gauss_map = np.expand_dims(Gauss_map,axis = 2);
+    Gauss_map = np.concatenate((Gauss_map,Gauss_map,Gauss_map),axis = 2);
+    crop_image = MaskImage[rect[1]:rect[3],rect[0]:rect[2],:];
+    crop_image = Gauss_map * crop_image;
+    MaskImage[rect[1]:rect[3],rect[0]:rect[2],:] = crop_image;
+    return MaskImage;
+
+def BeautifyLips2(MouthImage,Choice,shape):
     alphaA = 1;
     alphaB = 0.2;
     MouthImage = MouthImage / 255.0;
@@ -129,7 +160,7 @@ def BeautifyLips2(MouthImage,Choice):
     MaskImage[:,:,0] = YSL_RGB[Choice][0] / 255.0;
     MaskImage[:,:,1] = YSL_RGB[Choice][1] / 255.0;
     MaskImage[:,:,2] = YSL_RGB[Choice][2] / 255.0;
-
+    MaskImage = AddGaussian(MaskImage,shape);
     MouthImage = (alphaA * MouthImage *(1.0 - alphaB) + MaskImage * alphaB)  / (alphaA + alphaB -  alphaA * alphaB);
 
     return EnhanceMouth(np.array(MouthImage * 255,dtype = np.uint8));
@@ -162,7 +193,7 @@ def Beautify(image,choice):
 
         #tmp_image = BeautifyLips(image,choice);
         mask,image,Mask_image,rest_image = LipMask2(image.copy(),shape);
-        image = BeautifyLips2(image,choice);
+        image = BeautifyLips2(image,choice,shape);
 
         image = cv2.bitwise_and(Mask_image,image);
         image = image + rest_image;
@@ -185,7 +216,7 @@ def VideoDemo():
 
         cv2.imwrite('/home/sensetime/dalong/test.jpg',result[:,:,::-1]);
 def main():
-    image_path = 'demos/2.jpg';
+    image_path = 'demos/1.jpg';
 
     image = io.imread(image_path);
     start = time.time();
