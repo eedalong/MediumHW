@@ -8,6 +8,9 @@ import time
 import cv2;
 import numpy as np
 import skimage.color as color
+from skimage import transform  as sktransform
+from PIL import ImageEnhance
+from PIL import Image
 predictor_path = 'models/landmarks_detector.dat';
 detector = dlib.get_frontal_face_detector();
 predictor = dlib.shape_predictor(predictor_path);
@@ -17,12 +20,15 @@ cmap = [[0.0109,0.1379,0.96050],[0.0409,0.9379,0.46050],[0.0539,0.9379,0.9050],[
 
 YSL_RGB = [[204,139,147],[190,132,110],[221,165,190],[216,155,171],[230,106,158],[199,82,107],[181,118,135],[216,122,122],[193,131,154],[255,124,182]];
 
+points_list1 = [48,49,50,51,52,53,54,64,63,62,61,60,48];
+points_list2 = [48,59,58,57,56,55,54,64,65,66,67,60,48];
+points_lists = [points_list1,points_list2];
+
 def LipMask2(image,shape):
     Mask_Points = [];
     InterpolateNum = 20;
-    points_list1 = [48,49,50,51,52,53,54,64,63,62,61,60,48];
-    points_list2 = [48,59,58,57,56,55,54,64,65,66,67,60,48];
-    points_lists = [points_list1,points_list2];
+    global points_lists,points_list1,points_list2;
+
     Mask_image = np.zeros(image.shape,dtype = np.uint8);
     for points_list in points_lists:
         roi_corners = [[],];
@@ -80,7 +86,13 @@ def GetMouseLocation(image,shape):
     '''
     # return the bbox
     return [left  ,top,right,bottom];
+def EnhanceMouth(MouthImage):
 
+    image = Image.fromarray(MouthImage);
+    enh_col = ImageEnhance.Color(image);
+    color = 1.2;
+    image_colored = enh_col.enhance(color);
+    return np.asarray(image_colored);
 
 def BeautifyLips(MouthImage,Choice):
     '''
@@ -102,6 +114,13 @@ def BeautifyLips(MouthImage,Choice):
 
     #cv2.imwrite('/home/yuanxl/after_beautify.jpg',255*hsv_image[:,:,::-1])
     return np.array(Mouth * 255,dtype = np.uint8);
+def AddGuassian(MaskImage,shape):
+    '''
+    rect = GetRect(shape);
+    Guass_map = GetGaussMap(rect);
+    '''
+    pass
+
 def BeautifyLips2(MouthImage,Choice):
     alphaA = 1;
     alphaB = 0.2;
@@ -113,7 +132,7 @@ def BeautifyLips2(MouthImage,Choice):
 
     MouthImage = (alphaA * MouthImage *(1.0 - alphaB) + MaskImage * alphaB)  / (alphaA + alphaB -  alphaA * alphaB);
 
-    return np.array(MouthImage * 255,dtype = np.uint8);
+    return EnhanceMouth(np.array(MouthImage * 255,dtype = np.uint8));
 def Beautify(image,choice):
     dets = detector(image,1);
     print('dalong log : Number of faces detected  = {}'.format(len(dets)));
