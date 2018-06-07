@@ -87,7 +87,7 @@ def GetMouseLocation(image,shape):
     # return the bbox
     return [left  ,top,right,bottom];
 def EnhanceMouth(MouthImage):
-
+    return MouthImage;
     image = Image.fromarray(MouthImage);
     enh_col = ImageEnhance.Color(image);
     color = 1.2;
@@ -131,7 +131,7 @@ def GetRect(shape):
 
     return [x1,y1,x2,y2];
 def GetGaussMap(rect):
-    sigma = 5;
+    sigma = min((rect[2] - rect[0]) / 4.0,(rect[3] - rect[1]) / 4.0);
     gauss_map = np.zeros((rect[3] - rect[1],rect[2] - rect[0]));
     center_x = (rect[0] + rect[2] )/ 2;
     center_y = (rect[1] + rect[3]) / 2;
@@ -154,16 +154,18 @@ def AddGaussian(MaskImage,shape):
 
 def BeautifyLips2(MouthImage,Choice,shape):
     alphaA = 1;
-    alphaB = 0.2;
+    alphaB = 0.3;
     MouthImage = MouthImage / 255.0;
     MaskImage = np.zeros(MouthImage.shape);
     MaskImage[:,:,0] = YSL_RGB[Choice][0] / 255.0;
     MaskImage[:,:,1] = YSL_RGB[Choice][1] / 255.0;
     MaskImage[:,:,2] = YSL_RGB[Choice][2] / 255.0;
-    MaskImage = AddGaussian(MaskImage,shape);
+    #MaskImage = AddGaussian(MaskImage,shape);
     MouthImage = (alphaA * MouthImage *(1.0 - alphaB) + MaskImage * alphaB)  / (alphaA + alphaB -  alphaA * alphaB);
 
-    return EnhanceMouth(np.array(MouthImage * 255,dtype = np.uint8));
+    MouthImage = np.array(MouthImage * 255,dtype = np.uint8);
+    #MouthImage = EnhanceMouth(MouthImage);
+    return MouthImage;
 def Beautify(image,choice):
     dets = detector(image,1);
     print('dalong log : Number of faces detected  = {}'.format(len(dets)));
@@ -216,14 +218,15 @@ def VideoDemo():
 
         cv2.imwrite('/home/sensetime/dalong/test.jpg',result[:,:,::-1]);
 def main():
-    image_path = 'demos/1.jpg';
+    image_path = 'demos/2.jpg';
 
     image = io.imread(image_path);
     start = time.time();
     print('dalong log : into Beautify function');
-    result = Beautify(image,4);
-    cv2.imwrite('/home/yuanxl/lipmask/test.jpg',result[:,:,::-1]);
-    print('dalong log : demo done it consumes {} seconds '.format(time.time() - start));
+    for index in range(len(YSL_RGB)):
+        result = Beautify(image,index);
+        cv2.imwrite('/home/yuanxl/MediumHW/results/test'+str(index)+'.jpg',result[:,:,::-1]);
+        print('dalong log : demo done it consumes {} seconds '.format(time.time() - start));
 
 
 if __name__ == '__main__':
