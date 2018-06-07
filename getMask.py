@@ -104,7 +104,7 @@ def BeautifyLips(MouthImage,Choice):
     return np.array(Mouth * 255,dtype = np.uint8);
 def BeautifyLips2(MouthImage,Choice):
     alphaA = 1;
-    alphaB = 0.5;
+    alphaB = 0.2;
     MouthImage = MouthImage / 255.0;
     MaskImage = np.zeros(MouthImage.shape);
     MaskImage[:,:,0] = YSL_RGB[Choice][0] / 255.0;
@@ -166,12 +166,12 @@ def VideoDemo():
 
         cv2.imwrite('/home/sensetime/dalong/test.jpg',result[:,:,::-1]);
 def main():
-    image_path = 'demos/1.jpg';
+    image_path = 'demos/2.jpg';
 
     image = io.imread(image_path);
     start = time.time();
     print('dalong log : into Beautify function');
-    result = Beautify(image,0);
+    result = Beautify(image,4);
     cv2.imwrite('/home/yuanxl/lipmask/test.jpg',result[:,:,::-1]);
     print('dalong log : demo done it consumes {} seconds '.format(time.time() - start));
 
