@@ -14,6 +14,9 @@ predictor = dlib.shape_predictor(predictor_path);
 Mouth_Start = 48;
 Mouth_End = 68;
 cmap = [[0.0109,0.1379,0.96050],[0.0409,0.9379,0.46050],[0.0539,0.9379,0.9050],[0.8939,0.6379,0.8050]];
+
+YSL_RGB = [[204,139,147],[190,132,110],[221,165,190],[216,155,171],[230,106,158],[199,82,107],[181,118,135],[216,122,122],[193,131,154],[255,124,182]];
+
 def LipMask2(image,shape):
     Mask_Points = [];
     InterpolateNum = 20;
@@ -33,7 +36,7 @@ def LipMask2(image,shape):
         roi_corners = np.array(roi_corners,dtype = np.uint32);
         cv2.fillPoly(Mask_image,np.array(roi_corners,dtype = np.int32),(255,255,255));
 
-    cv2.imwrite('/home/sensetime/dalong/mask.jpg',Mask_image);
+    cv2.imwrite('/home/yuanxl/lipmask/mask.jpg',Mask_image);
     tmp_image = cv2.bitwise_and(Mask_image,image);
     rest_image = image - tmp_image;
     return Mask_Points,image,Mask_image,rest_image;
@@ -88,7 +91,7 @@ def BeautifyLips(MouthImage,Choice):
     and i will transform the code to python as soon as he finished that
     '''
     hsv_image = color.rgb2hsv(MouthImage);
-    ratio = 0.15;
+    ratio = 0.25;
     hsv_image[:,:,0] = (1 - ratio) * hsv_image[:,:,0] + ratio * (cmap[Choice][0] - hsv_image[:,:,0]);
     hsv_image[:,:,1] = (1 - ratio) * hsv_image[:,:,1] + ratio * (cmap[Choice][1] - hsv_image[:,:,1]);
     hsv_image[:,:,2] = (1 - ratio) * hsv_image[:,:,2] + ratio * (cmap[Choice][2] - hsv_image[:,:,2]);
@@ -97,9 +100,20 @@ def BeautifyLips(MouthImage,Choice):
     #print(Mouth);
     print('dalong log : after beautify');
 
-    #cv2.imwrite('/home/sensetime/dalong/after_beautify.jpg',255*hsv_image[:,:,::-1])
+    #cv2.imwrite('/home/yuanxl/after_beautify.jpg',255*hsv_image[:,:,::-1])
     return np.array(Mouth * 255,dtype = np.uint8);
+def BeautifyLips2(MouthImage,Choice):
+    alphaA = 1;
+    alphaB = 0.5;
+    MouthImage = MouthImage / 255.0;
+    MaskImage = np.zeros(MouthImage.shape);
+    MaskImage[:,:,0] = YSL_RGB[Choice][0] / 255.0;
+    MaskImage[:,:,1] = YSL_RGB[Choice][1] / 255.0;
+    MaskImage[:,:,2] = YSL_RGB[Choice][2] / 255.0;
 
+    MouthImage = (alphaA * MouthImage *(1.0 - alphaB) + MaskImage * alphaB)  / (alphaA + alphaB -  alphaA * alphaB);
+
+    return np.array(MouthImage * 255,dtype = np.uint8);
 def Beautify(image,choice):
     dets = detector(image,1);
     print('dalong log : Number of faces detected  = {}'.format(len(dets)));
@@ -129,7 +143,7 @@ def Beautify(image,choice):
 
         #tmp_image = BeautifyLips(image,choice);
         mask,image,Mask_image,rest_image = LipMask2(image.copy(),shape);
-        image = BeautifyLips(image,choice);
+        image = BeautifyLips2(image,choice);
 
         image = cv2.bitwise_and(Mask_image,image);
         image = image + rest_image;
@@ -157,14 +171,14 @@ def main():
     image = io.imread(image_path);
     start = time.time();
     print('dalong log : into Beautify function');
-    result = Beautify(image,3);
-    cv2.imwrite('/home/sensetime/dalong/test.jpg',result[:,:,::-1]);
+    result = Beautify(image,1);
+    cv2.imwrite('/home/yuanxl/lipmask/test.jpg',result[:,:,::-1]);
     print('dalong log : demo done it consumes {} seconds '.format(time.time() - start));
 
 
 if __name__ == '__main__':
-    #main();
-    VideoDemo();
+    main();
+    #VideoDemo();
 
 
 
