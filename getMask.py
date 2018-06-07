@@ -171,7 +171,7 @@ def main():
     image = io.imread(image_path);
     start = time.time();
     print('dalong log : into Beautify function');
-    result = Beautify(image,1);
+    result = Beautify(image,0);
     cv2.imwrite('/home/yuanxl/lipmask/test.jpg',result[:,:,::-1]);
     print('dalong log : demo done it consumes {} seconds '.format(time.time() - start));
 
