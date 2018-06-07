@@ -89,7 +89,7 @@ def GetMouseLocation(image,shape):
 def EnhanceMouth(MouthImage):
     image = Image.fromarray(MouthImage);
     enh_col = ImageEnhance.Color(image);
-    color = 1.1;
+    color = 1.2;
     image_colored = enh_col.enhance(color);
     return np.asarray(image_colored);
 
@@ -130,20 +130,21 @@ def GetRect(shape):
 
     return [x1,y1,x2,y2];
 def GetGaussMap(rect):
-    sigma = min((rect[2] - rect[0]) / 4.0,(rect[3] - rect[1]) / 4.0);
+    sigma = min((rect[2] - rect[0]) / 1.5 ,(rect[3] - rect[1]) / 1.5);
     gauss_map = np.zeros((rect[3] - rect[1],rect[2] - rect[0]));
     center_x = (rect[0] + rect[2] )/ 2;
     center_y = (rect[1] + rect[3]) / 2;
     for i in range(rect[3] -rect[1]):
         for j in range(rect[2] - rect[0]):
-            dist = np.sqrt((i -center_y)**2 + (j  - center_x)**2);
-            gauss_map[i][j] = np.exp(-0.5 * dist / sigma);
+            dist = np.sqrt((i + rect[1] -center_y)**2 + (j + rect[0] - center_x)**2);
+            gauss_map[i][j] = np.exp(-0.5 * dist**2 / sigma**2);
     return gauss_map;
 
 def AddGaussian(MaskImage,shape):
 
     rect = GetRect(shape);
     Gauss_map = GetGaussMap(rect);
+    #print('dalong log : check gauss map = {}'.format(Gauss_map));
     Gauss_map = np.expand_dims(Gauss_map,axis = 2);
     Gauss_map = np.concatenate((Gauss_map,Gauss_map,Gauss_map),axis = 2);
     crop_image = MaskImage[rect[1]:rect[3],rect[0]:rect[2],:];
@@ -153,15 +154,17 @@ def AddGaussian(MaskImage,shape):
 
 def BeautifyLips2(MouthImage,Choice,shape):
     alphaA = 1;
-    alphaB = 0.3;
+
     MouthImage = MouthImage / 255.0;
     MaskImage = np.zeros(MouthImage.shape);
+    alphaB = np.zeros(MouthImage.shape);
+    alphaB[:,:,:] = 0.3;
+
     MaskImage[:,:,0] = YSL_RGB[Choice][0] / 255.0;
     MaskImage[:,:,1] = YSL_RGB[Choice][1] / 255.0;
     MaskImage[:,:,2] = YSL_RGB[Choice][2] / 255.0;
-    #MaskImage = AddGaussian(MaskImage,shape);
+    alphaB = AddGaussian(alphaB,shape);
     MouthImage = (alphaA * MouthImage *(1.0 - alphaB) + MaskImage * alphaB)  / (alphaA + alphaB -  alphaA * alphaB);
-
     MouthImage = np.array(MouthImage * 255,dtype = np.uint8);
     MouthImage = EnhanceMouth(MouthImage);
     return MouthImage;
