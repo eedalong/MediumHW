@@ -87,10 +87,9 @@ def GetMouseLocation(image,shape):
     # return the bbox
     return [left  ,top,right,bottom];
 def EnhanceMouth(MouthImage):
-    return MouthImage;
     image = Image.fromarray(MouthImage);
     enh_col = ImageEnhance.Color(image);
-    color = 1.2;
+    color = 1.1;
     image_colored = enh_col.enhance(color);
     return np.asarray(image_colored);
 
@@ -164,7 +163,7 @@ def BeautifyLips2(MouthImage,Choice,shape):
     MouthImage = (alphaA * MouthImage *(1.0 - alphaB) + MaskImage * alphaB)  / (alphaA + alphaB -  alphaA * alphaB);
 
     MouthImage = np.array(MouthImage * 255,dtype = np.uint8);
-    #MouthImage = EnhanceMouth(MouthImage);
+    MouthImage = EnhanceMouth(MouthImage);
     return MouthImage;
 def Beautify(image,choice):
     dets = detector(image,1);
